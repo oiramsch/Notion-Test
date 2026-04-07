@@ -1,0 +1,45 @@
+name: Notion API Smoke
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      NOTION_PAGE_ID: 325765e5-dc96-81fc-b772-e7a3cf48dfa5
+      NOTION_VERSION: 2022-06-28
+
+    steps:
+      - name: Check secret present
+        run: |
+          if [ -z "$NOTION_TOKEN" ]; then
+            echo "NOTION_TOKEN missing"
+            exit 1
+          fi
+          echo "NOTION_TOKEN present (len=${#NOTION_TOKEN})"
+
+      - name: Fetch page
+        run: |
+          curl -sS -D /tmp/headers.txt \
+            -H "Authorization: Bearer $NOTION_TOKEN" \
+            -H "Notion-Version: $NOTION_VERSION" \
+            "https://api.notion.com/v1/pages/$NOTION_PAGE_ID" \
+            -o /tmp/page.json
+
+          echo "---- HTTP ----"
+          head -n 1 /tmp/headers.txt
+
+          echo "---- BODY (first 400 chars) ----"
+          head -c 400 /tmp/page.json; echo
+
+      - name: Assert success (200)
+        run: |
+          STATUS=$(head -n 1 /tmp/headers.txt | awk '{print $2}')
+          if [ "$STATUS" != "200" ]; then
+            echo "NOTION_FETCH_FAILED status=$STATUS"
+            cat /tmp/page.json
+            exit 1
+          fi
+          echo "NOTION_FETCH_OK"
