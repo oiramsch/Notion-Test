@@ -1,0 +1,49 @@
+name: Claude Notion Smoke Test
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  claude:
+    if: contains(github.event.issue.body, '@claude')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Write MCP config
+        if: env.NOTION_TOKEN != ''
+        run: |
+          cat > /tmp/mcp-notion.json << EOF
+          {
+            "mcpServers": {
+              "notion": {
+                "type": "url",
+                "url": "https://mcp.notion.com/mcp",
+                "headers": {
+                  "Authorization": "Bearer $NOTION_TOKEN"
+                }
+              }
+            }
+          }
+          EOF
+
+      - name: Run Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true
+          trigger_phrase: "@claude"
+          claude_args: >-
+            ${{ env.NOTION_TOKEN != '' && '--mcp-config /tmp/mcp-notion.json --allowed-tools "mcp__notion__notion-fetch,mcp__github_comment__update_claude_comment"' || '' }}
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
