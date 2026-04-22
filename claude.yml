@@ -43,6 +43,12 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
           trigger_phrase: "@claude"
+          agent_instructions: |
+            Test Instructions:
+            1. Use ONLY the mcp__notion__notion-fetch tool to fetch Notion page ID: 31e765e5dc96801aac98c65d298dab89
+            2. If the fetch succeeds and you can access the page title, respond with: TITLE_OK
+            3. If the Notion MCP is unavailable or the fetch fails, respond with: NOTION_MCP_UNAVAILABLE
+            4. Provide ONLY one of these two responses as your final answer.
           claude_args: >-
             ${{ env.NOTION_TOKEN != '' && '--mcp-config /tmp/mcp-notion.json --allowed-tools "mcp__notion__notion-fetch,mcp__github_comment__update_claude_comment"' || '' }}
         env:
